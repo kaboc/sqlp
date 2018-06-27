@@ -11,7 +11,7 @@ import (
 type Rows struct {
 	Rows        *sql.Rows
 	structPtr   interface{}
-	destPtr     *[]interface{}
+	dest        []interface{}
 	columnNames []string
 }
 
@@ -43,8 +43,8 @@ func (rs *Rows) Scan(dest ...interface{}) error {
 	return rs.Rows.Scan(dest...)
 }
 
-func prepareScanToStruct(structPtr interface{}, columnNames []string) (*[]interface{}, error) {
-	destPtr := make([]interface{}, len(columnNames))
+func prepareScanToStruct(structPtr interface{}, columnNames []string) ([]interface{}, error) {
+	dest := make([]interface{}, len(columnNames))
 	structV := ref.PtrValueOf(structPtr)
 	fields := ref.GetStructFields(structV)
 
@@ -56,14 +56,14 @@ outerLoop:
 					return nil, er.New("one or more destination struct fields are unexported")
 				}
 
-				destPtr[i] = structV.FieldByName(v2.Name).Addr().Interface()
+				dest[i] = structV.FieldByName(v2.Name).Addr().Interface()
 				continue outerLoop
 			}
 		}
 		return nil, er.Errorf("struct field for column '%s' is missing", v)
 	}
 
-	return &destPtr, nil
+	return dest, nil
 }
 
 func (rs *Rows) ScanToStruct(structPtr interface{}) error {
@@ -77,16 +77,16 @@ func (rs *Rows) ScanToStruct(structPtr interface{}) error {
 			return err
 		}
 
-		destPtr, err := prepareScanToStruct(structPtr, columnNames)
+		dest, err := prepareScanToStruct(structPtr, columnNames)
 		if err != nil {
 			return err
 		}
 
 		rs.structPtr = structPtr
-		rs.destPtr = destPtr
+		rs.dest = dest
 	}
 
-	err := rs.Rows.Scan(*rs.destPtr...)
+	err := rs.Rows.Scan(rs.dest...)
 	if err != nil {
 		return err
 	}
@@ -94,16 +94,16 @@ func (rs *Rows) ScanToStruct(structPtr interface{}) error {
 	return nil
 }
 
-func prepareScanToMap(columnNames []string) *[]interface{} {
+func prepareScanToMap(columnNames []string) []interface{} {
 	columnLen := len(columnNames)
-	destPtr := make([]interface{}, columnLen)
-	dest := make([]RawBytes, columnLen)
+	dest := make([]interface{}, columnLen)
+	v := make([]RawBytes, columnLen)
 
 	for i := range columnNames {
-		destPtr[i] = &dest[i]
+		dest[i] = &v[i]
 	}
 
-	return &destPtr
+	return dest
 }
 
 func (rs *Rows) ScanToMap() (map[string]string, error) {
@@ -114,16 +114,16 @@ func (rs *Rows) ScanToMap() (map[string]string, error) {
 		}
 
 		rs.columnNames = columnNames
-		rs.destPtr = prepareScanToMap(columnNames)
+		rs.dest = prepareScanToMap(columnNames)
 	}
 
-	if err := rs.Scan(*rs.destPtr...); err != nil {
+	if err := rs.Scan(rs.dest...); err != nil {
 		return nil, err
 	}
 
 	result := make(map[string]string)
 	for i, v := range rs.columnNames {
-		result[v] = string(*((*rs.destPtr)[i].(*RawBytes)))
+		result[v] = string(*((rs.dest)[i].(*RawBytes)))
 	}
 
 	return result, nil
