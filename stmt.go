@@ -49,3 +49,27 @@ func (s *Stmt) QueryRowContext(ctx context.Context, args ...interface{}) *Row {
 func (s *Stmt) QueryRow(args ...interface{}) *Row {
 	return s.QueryRowContext(context.Background(), args...)
 }
+
+func (s *Stmt) SelectToStructContext(ctx context.Context, structSlicePtr interface{}, args ...interface{}) error {
+	return selectToStructContext(ctx, s, structSlicePtr, s.query, args...)
+}
+
+func (s *Stmt) SelectToStruct(structSlicePtr interface{}, args ...interface{}) error {
+	return s.SelectToStructContext(context.Background(), structSlicePtr, args...)
+}
+
+func (s *Stmt) SelectToMapContext(ctx context.Context, args ...interface{}) ([]map[string]string, error) {
+	return selectToMapContext(ctx, s, s.query, args...)
+}
+
+func (s *Stmt) SelectToMap(args ...interface{}) ([]map[string]string, error) {
+	return s.SelectToMapContext(context.Background(), args...)
+}
+
+func (s *Stmt) SelectToSliceContext(ctx context.Context, args ...interface{}) ([][]string, error) {
+	return selectToSliceContext(ctx, s, s.query, args...)
+}
+
+func (s *Stmt) SelectToSlice(args ...interface{}) ([][]string, error) {
+	return s.SelectToSliceContext(context.Background(), args...)
+}
