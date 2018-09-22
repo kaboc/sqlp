@@ -49,14 +49,8 @@ func queryContext(ctx context.Context, sq sqler, query string, args ...interface
 }
 
 func queryRowContext(ctx context.Context, sq sqler, query string, args ...interface{}) *Row {
-	var sqlRows *sql.Rows
-
-	query, bind, err := placeholder.Convert(query, args...)
-	if err == nil {
-		sqlRows, err = sq.sqlQueryContext(ctx, query, bind...)
-	}
-
-	return &Row{rows: &Rows{Rows: sqlRows}, err: err}
+	rows, err := queryContext(ctx, sq, query, args...)
+	return &Row{rows: rows, err: err}
 }
 
 func prepareContext(ctx context.Context, sq sqler, query string) (*Stmt, error) {

@@ -98,7 +98,7 @@ func (db *DB) SelectToStructContext(ctx context.Context, structSlicePtr interfac
 }
 
 func (db *DB) SelectToStruct(structSlicePtr interface{}, query string, args ...interface{}) error {
-	return selectToStructContext(context.Background(), db, structSlicePtr, query, args...)
+	return db.SelectToStructContext(context.Background(), structSlicePtr, query, args...)
 }
 
 func (db *DB) SelectToMapContext(ctx context.Context, query string, args ...interface{}) ([]map[string]string, error) {
@@ -106,7 +106,7 @@ func (db *DB) SelectToMapContext(ctx context.Context, query string, args ...inte
 }
 
 func (db *DB) SelectToMap(query string, args ...interface{}) ([]map[string]string, error) {
-	return selectToMapContext(context.Background(), db, query, args...)
+	return db.SelectToMapContext(context.Background(), query, args...)
 }
 
 func (db *DB) SelectToSliceContext(ctx context.Context, query string, args ...interface{}) ([][]string, error) {
@@ -114,7 +114,7 @@ func (db *DB) SelectToSliceContext(ctx context.Context, query string, args ...in
 }
 
 func (db *DB) SelectToSlice(query string, args ...interface{}) ([][]string, error) {
-	return selectToSliceContext(context.Background(), db, query, args...)
+	return db.SelectToSliceContext(context.Background(), query, args...)
 }
 
 func (db *DB) Driver() driver.Driver {

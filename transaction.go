@@ -37,12 +37,12 @@ func (tx *Tx) sqlExecContext(ctx context.Context, query string, args ...interfac
 	return tx.SqlTx.ExecContext(ctx, query, args...)
 }
 
-func (tx *Tx) sqlPrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
-	return tx.SqlTx.PrepareContext(ctx, query)
-}
-
 func (tx *Tx) sqlQueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	return tx.SqlTx.QueryContext(ctx, query, args...)
+}
+
+func (tx *Tx) sqlPrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+	return tx.SqlTx.PrepareContext(ctx, query)
 }
 
 func (tx *Tx) ExecContext(ctx context.Context, query string, args ...interface{}) (Result, error) {
@@ -74,7 +74,7 @@ func (tx *Tx) InsertContext(ctx context.Context, tableName string, structSlice i
 }
 
 func (tx *Tx) Insert(tableName string, structSlice interface{}) (Result, error) {
-	return insertContext(context.Background(), tx, tableName, structSlice)
+	return tx.InsertContext(context.Background(), tableName, structSlice)
 }
 
 func (tx *Tx) PrepareContext(ctx context.Context, query string) (*Stmt, error) {
@@ -90,7 +90,7 @@ func (tx *Tx) SelectToStructContext(ctx context.Context, structSlicePtr interfac
 }
 
 func (tx *Tx) SelectToStruct(structSlicePtr interface{}, query string, args ...interface{}) error {
-	return selectToStructContext(context.Background(), tx, structSlicePtr, query, args...)
+	return tx.SelectToStructContext(context.Background(), structSlicePtr, query, args...)
 }
 
 func (tx *Tx) SelectToMapContext(ctx context.Context, query string, args ...interface{}) ([]map[string]string, error) {
@@ -98,7 +98,7 @@ func (tx *Tx) SelectToMapContext(ctx context.Context, query string, args ...inte
 }
 
 func (tx *Tx) SelectToMap(query string, args ...interface{}) ([]map[string]string, error) {
-	return selectToMapContext(context.Background(), tx, query, args...)
+	return tx.SelectToMapContext(context.Background(), query, args...)
 }
 
 func (tx *Tx) SelectToSliceContext(ctx context.Context, query string, args ...interface{}) ([][]string, error) {
@@ -106,5 +106,5 @@ func (tx *Tx) SelectToSliceContext(ctx context.Context, query string, args ...in
 }
 
 func (tx *Tx) SelectToSlice(query string, args ...interface{}) ([][]string, error) {
-	return selectToSliceContext(context.Background(), tx, query, args...)
+	return tx.SelectToSliceContext(context.Background(), query, args...)
 }
