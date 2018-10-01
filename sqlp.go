@@ -18,7 +18,7 @@ func execContext(ctx context.Context, sq sqler, query string, args ...interface{
 
 	query, bind, err := placeholder.Convert(query, args...)
 	if err != nil {
-		return result, nil
+		return result, err
 	}
 
 	res, err := sq.sqlExecContext(ctx, query, bind...)
