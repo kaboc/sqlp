@@ -5,15 +5,54 @@ import (
 	"testing"
 )
 
+func TestReplaceQuotes(t *testing.T) {
+	src := `SELECT * FROM /*tbl1 --aaa
+				*/ ` + "`tbl2`" + ` --bbb
+				WHERE col1 = 'c\'cc'# /* ddd */
+					OR col2 = 'eee
+eee' /*
+					OR col3 = '#fff'*/
+					OR col4 = 'g/*g*/g' # :hhh ii/*ii*/ii
+					OR col5 = 'iii'/*jjj*/#kkk
+					OR col6 = ''
+					OR col7 = :col7 -- :lll
+					OR col8 = :col8# :mmm
+					OR col9 = :col9/* :nnn */
+				ORDER BY id--ooo
+				LIMIT 10#'ppp'`
+
+	dest := "SELECT * FROM /**SQLP_REPLACE**/ /**SQLP_REPLACE**//**SQLP_REPLACE**/" +
+		"\t\t\t\tWHERE col1 = /**SQLP_REPLACE**//**SQLP_REPLACE**/" +
+		"\t\t\t\t\tOR col2 = /**SQLP_REPLACE**/ /**SQLP_REPLACE**/\n" +
+		"\t\t\t\t\tOR col4 = /**SQLP_REPLACE**/ /**SQLP_REPLACE**/" +
+		"\t\t\t\t\tOR col5 = /**SQLP_REPLACE**//**SQLP_REPLACE**//**SQLP_REPLACE**/" +
+		"\t\t\t\t\tOR col6 = /**SQLP_REPLACE**/\n" +
+		"\t\t\t\t\tOR col7 = :col7/**SQLP_REPLACE**/" +
+		"\t\t\t\t\tOR col8 = :col8/**SQLP_REPLACE**/" +
+		"\t\t\t\t\tOR col9 = :col9/**SQLP_REPLACE**/\n" +
+		"\t\t\t\tORDER BY id--ooo\n" +
+		"\t\t\t\tLIMIT 10/**SQLP_REPLACE**/"
+
+	q, r := replace(src)
+	if q != dest {
+		t.Fatalf("got: %#v\nwant: %#v", q, dest)
+	}
+
+	q = restore(q, r)
+	if q != src {
+		t.Fatalf("got: %#v\nwant: %#v", q, src)
+	}
+}
+
 func TestSimplifyUnnamed(t *testing.T) {
 	// Whether IN is all in capital letters does not matter
 	{
-		srcQ := "SELECT * FROM user WHERE id iN ?[3] AND age > ? AND name LIKE ? LIMIT ?"
+		srcQ := "SELECT * FROM user WHERE id iN ?[3] AND age > ? AND name LIKE ? LIMIT ?# ?"
 		srcV1 := []interface{}{1, 2, 3}
 		srcV2 := 10
 		srcV3 := []interface{}{"J%", 100}
 
-		destQ := "SELECT * FROM user WHERE id iN (?,?,?) AND age > ? AND name LIKE ? LIMIT ?"
+		destQ := "SELECT * FROM user WHERE id iN (?,?,?) AND age > ? AND name LIKE ? LIMIT ?# ?"
 		destV := []interface{}{1, 2, 3, 10, "J%", 100}
 
 		q, b, err := convertUnnamed(srcQ, srcV1, srcV2, srcV3)
@@ -72,7 +111,7 @@ func TestSimplifyUnnamed(t *testing.T) {
 func TestSimplifyNamed(t *testing.T) {
 	// Whether IN is all in capital letters does not matter
 	{
-		srcQ := "SELECT * FROM user WHERE id iN :id[3] AND age > :age AND name LIKE :name LIMIT :limit"
+		srcQ := "SELECT * FROM user WHERE id iN :id[3] AND age > :age AND name LIKE :name LIMIT :limit -- :dummy"
 		srcV := map[string]interface{}{
 			"id":    []interface{}{1, 2, 3},
 			"age":   10,
@@ -80,7 +119,7 @@ func TestSimplifyNamed(t *testing.T) {
 			"limit": 100,
 		}
 
-		destQ := "SELECT * FROM user WHERE id iN (?,?,?) AND age > ? AND name LIKE ? LIMIT ?"
+		destQ := "SELECT * FROM user WHERE id iN (?,?,?) AND age > ? AND name LIKE ? LIMIT ? -- :dummy"
 		destV := []interface{}{1, 2, 3, 10, "J%", 100}
 
 		q, b, err := convertNamed(srcQ, srcV)
@@ -97,13 +136,13 @@ func TestSimplifyNamed(t *testing.T) {
 
 	// 'IN :placeholder[N]' inside quotes are ignored
 	{
-		srcQ := "SELECT * FROM user WHERE id IN :id[2] AND name = 'id IN :id[2] ' AND age IN :age[2]"
+		srcQ := "SELECT * FROM user WHERE id IN :id[2] AND name = 'id IN :id[2] ' AND age IN :age[2]/* :dummy */"
 		srcV := map[string]interface{}{
 			"id":  []interface{}{1, 2},
 			"age": []interface{}{21, 22},
 		}
 
-		destQ := "SELECT * FROM user WHERE id IN (?,?) AND name = 'id IN :id[2] ' AND age IN (?,?)"
+		destQ := "SELECT * FROM user WHERE id IN (?,?) AND name = 'id IN :id[2] ' AND age IN (?,?)/* :dummy */"
 		destV := []interface{}{1, 2, 21, 22}
 
 		q, b, err := convertNamed(srcQ, srcV)
