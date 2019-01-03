@@ -10,14 +10,19 @@ import (
 	ref "github.com/kaboc/sqlp/reflect"
 )
 
-func replaceQuotes(query string) (string, []string) {
-	exp := regexp.MustCompile(`(?m)'(\\'|[^'])*'`)
-	return exp.ReplaceAllString(query, "''"), exp.FindAllString(query, -1)
+func replace(query string) (string, []string) {
+	p1 := `'(\\'|[^'])*?'`
+	p2 := `"(\\"|[^"])*?"`
+	p3 := "`[^`]*?`"
+	p4 := `/\*.*?\*/`
+	p5 := `(#|\s+--).*?([\r\n]|$)`
+	exp := regexp.MustCompile(`(?s)(` + p1 + `|` + p2 + `|` + p3 + `|` + p4 + `|` + p5 + `)`)
+	return exp.ReplaceAllString(query, "/**SQLP_REPLACE**/"), exp.FindAllString(query, -1)
 }
 
-func restoreQuotes(query string, orgQuotes []string) string {
+func restore(query string, orgQuotes []string) string {
 	for _, v := range orgQuotes {
-		query = strings.Replace(query, "''", v, 1)
+		query = strings.Replace(query, "/**SQLP_REPLACE**/", v, 1)
 	}
 	return query
 }
@@ -42,9 +47,9 @@ func convertUnnamed(query string, args ...interface{}) (string, []interface{}, e
 		}
 	}
 
-	query, quotes := replaceQuotes(query)
+	query, quotes := replace(query)
 	query = unnamedToStd(query)
-	query = restoreQuotes(query, quotes)
+	query = restore(query, quotes)
 
 	return query, bind, nil
 }
@@ -66,7 +71,7 @@ func unnamedToStd(query string) string {
 }
 
 func convertNamed(query string, arg map[string]interface{}) (string, []interface{}, error) {
-	query, quotes := replaceQuotes(query)
+	query, quotes := replace(query)
 
 	queryUnnamed, bindModel := namedToStd(query)
 
@@ -124,7 +129,7 @@ func convertNamed(query string, arg map[string]interface{}) (string, []interface
 		}
 	}
 
-	queryUnnamed = restoreQuotes(queryUnnamed, quotes)
+	queryUnnamed = restore(queryUnnamed, quotes)
 
 	return queryUnnamed, bind, nil
 }
@@ -132,7 +137,7 @@ func convertNamed(query string, arg map[string]interface{}) (string, []interface
 func namedToStd(query string) (string, map[string]interface{}) {
 	bindModel := make(map[string]interface{})
 
-	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([^\s\[\),]+)\[(\d*)\]([\s\),]|$)`)
+	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([^\s\[\),]+)\[(\d*)\]([\s\)/,]|$)`)
 	matches := exp.FindAllStringSubmatch(query, -1)
 
 	for _, v := range matches {
@@ -141,7 +146,7 @@ func namedToStd(query string) (string, map[string]interface{}) {
 		bindModel[v[2]] = make([]interface{}, num)
 	}
 
-	exp = regexp.MustCompile(`(?m):([^\s\[\),]+)([\s\),]|$)`)
+	exp = regexp.MustCompile(`(?m):([^\s\[\)/,]+)([\s\)/,]|$)`)
 	matches = exp.FindAllStringSubmatch(query, -1)
 
 	for _, v := range matches {
@@ -167,7 +172,7 @@ func Convert(query string, args ...interface{}) (string, []interface{}, error) {
 }
 
 func ConvertSQL(query string) (string, error) {
-	q, quotes := replaceQuotes(query)
+	q, quotes := replace(query)
 
 	var queryUnnamed string
 
@@ -177,7 +182,7 @@ func ConvertSQL(query string) (string, error) {
 		queryUnnamed = unnamedToStd(query)
 	}
 
-	queryUnnamed = restoreQuotes(queryUnnamed, quotes)
+	queryUnnamed = restore(queryUnnamed, quotes)
 
 	return queryUnnamed, nil
 }
