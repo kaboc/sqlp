@@ -14,7 +14,7 @@ The key features are:
     * [Example Table](#example-table)
     * [Getting Started](#getting-started)
     * [Insert](#insert)
-        * [Caution](#caution)
+        * [Note](#note)
     * [Scan](#scan)
         * [Into struct](#into-struct)
         * [Into map](#into-map)
@@ -27,7 +27,6 @@ The key features are:
     * [Unnamed Placeholder](#unnamed-placeholder)
         * [For different types of placeholder](#for-different-types-of-placeholder)
     * [Named Placeholder](#named-placeholder)
-* [Known Issues](#known-issues)
 * [License](#license)
 
 ## Installation
@@ -119,17 +118,15 @@ Struct fields need to be capitalized so that sqlp can access them.
 A tag is necessary only when the field name is not the same as the column name.
 In the above example, `col:"age"` can be omitted since columns are case insensitive in MySQL by default and `Age` and `age` are not distinguished.
 
-Values are processed via placeholders internally and escaped to be safe. There is no need to worry about SQL injection.
+Values are processed via [placeholders](#placeholders) internally and escaped to be safe. There is no need to worry about SQL injection.
 
-#### Caution
+#### Note
 
 * If the table name is a reserved keyword, it has to be enclosed with back quotes, double quotes, etc. depending on the DBMS. Below is an example for PostgreSQL.
 
     ```go
     res, err := db.Insert(`"user"`, data)
     ```
-
-* `sqlp.Insert()` internally uses placeholders as mentioned above, therefore the same description as in the [`For different types of placeholder`](#for-different-types-of-placeholder) section applies here.
 
 ### Scan
 
@@ -337,10 +334,6 @@ u, err := db.SelectToMap(q, b)
 ```
 
 It is the same here as for unnamed placeholder that `placeholer.SetType()` or `placeholder.SetConvertFunc()` is necessary if your DBMS or database driver does not support the `?` type.
-
-## Known Issues
-
-* `:XXXX` (text starting with a colon) in SQL comment is treated as a named placeholder.
 
 ## License
 
