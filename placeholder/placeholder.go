@@ -10,6 +10,8 @@ import (
 	ref "github.com/kaboc/sqlp/reflect"
 )
 
+const TEMP_REPLACEMENT = "/**SQLP_REPLACE**/"
+
 func replace(query string) (string, []string) {
 	p1 := `'(\\'|[^'])*?'`
 	p2 := `"(\\"|[^"])*?"`
@@ -17,12 +19,12 @@ func replace(query string) (string, []string) {
 	p4 := `/\*.*?\*/`
 	p5 := `(#|\s+--).*?([\r\n]|$)`
 	exp := regexp.MustCompile(`(?s)(` + p1 + `|` + p2 + `|` + p3 + `|` + p4 + `|` + p5 + `)`)
-	return exp.ReplaceAllString(query, "/**SQLP_REPLACE**/"), exp.FindAllString(query, -1)
+	return exp.ReplaceAllString(query, TEMP_REPLACEMENT), exp.FindAllString(query, -1)
 }
 
-func restore(query string, orgQuotes []string) string {
-	for _, v := range orgQuotes {
-		query = strings.Replace(query, "/**SQLP_REPLACE**/", v, 1)
+func restore(query string, orgs []string) string {
+	for _, v := range orgs {
+		query = strings.Replace(query, TEMP_REPLACEMENT, v, 1)
 	}
 	return query
 }
@@ -47,15 +49,15 @@ func convertUnnamed(query string, args ...interface{}) (string, []interface{}, e
 		}
 	}
 
-	query, quotes := replace(query)
+	query, orgs := replace(query)
 	query = unnamedToStd(query)
-	query = restore(query, quotes)
+	query = restore(query, orgs)
 
 	return query, bind, nil
 }
 
 func unnamedToStd(query string) string {
-	exp := regexp.MustCompile(`(?im)(\s+in)\s+\?\[(\d*)\]([\s\),]|$)`)
+	exp := regexp.MustCompile(`(?im)(\s+in)\s+\?\[(\d*)\]([\s\),]|` + regexp.QuoteMeta(TEMP_REPLACEMENT) + `|$)`)
 	matches := exp.FindAllStringSubmatch(query, -1)
 
 	for _, v := range matches {
@@ -71,7 +73,7 @@ func unnamedToStd(query string) string {
 }
 
 func convertNamed(query string, arg map[string]interface{}) (string, []interface{}, error) {
-	query, quotes := replace(query)
+	query, orgs := replace(query)
 
 	queryUnnamed, bindModel := namedToStd(query)
 
@@ -129,7 +131,7 @@ func convertNamed(query string, arg map[string]interface{}) (string, []interface
 		}
 	}
 
-	queryUnnamed = restore(queryUnnamed, quotes)
+	queryUnnamed = restore(queryUnnamed, orgs)
 
 	return queryUnnamed, bind, nil
 }
@@ -137,7 +139,7 @@ func convertNamed(query string, arg map[string]interface{}) (string, []interface
 func namedToStd(query string) (string, map[string]interface{}) {
 	bindModel := make(map[string]interface{})
 
-	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([^\s\[\),]+)\[(\d*)\]([\s\)/,]|$)`)
+	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([^\s\[\),]+)\[(\d*)\]([\s\)/,]|` + regexp.QuoteMeta(TEMP_REPLACEMENT) + `|$)`)
 	matches := exp.FindAllStringSubmatch(query, -1)
 
 	for _, v := range matches {
@@ -172,17 +174,17 @@ func Convert(query string, args ...interface{}) (string, []interface{}, error) {
 }
 
 func ConvertSQL(query string) (string, error) {
-	q, quotes := replace(query)
+	q, orgs := replace(query)
 
 	var queryUnnamed string
 
 	if strings.Contains(q, ":") {
 		queryUnnamed, _ = namedToStd(q)
 	} else {
-		queryUnnamed = unnamedToStd(query)
+		queryUnnamed = unnamedToStd(q)
 	}
 
-	queryUnnamed = restore(queryUnnamed, quotes)
+	queryUnnamed = restore(queryUnnamed, orgs)
 
 	return queryUnnamed, nil
 }
