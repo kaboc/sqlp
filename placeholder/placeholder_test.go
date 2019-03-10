@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestReplaceQuotes(t *testing.T) {
+func TestReplace(t *testing.T) {
 	src := `SELECT * FROM /*tbl1 --aaa
 				*/ ` + "`tbl2`" + ` --bbb
 				WHERE col1 = 'c\'cc'# /* ddd */
@@ -44,6 +44,26 @@ eee' /*
 	}
 }
 
+func TestIsNamed(t *testing.T) {
+	{
+		src := []interface{}{1, 2, 3}
+
+		if isNamed(src) {
+			t.Fatal("unnamed placeholder was recognized as named")
+		}
+	}
+
+	{
+		src := map[string]interface{}{
+			"id": []interface{}{1, 2, 3},
+		}
+
+		if !isNamed(src) {
+			t.Fatal("named placeholder was recognized as unnamed")
+		}
+	}
+}
+
 func TestSimplifyUnnamed(t *testing.T) {
 	// Whether IN is all in capital letters does not matter
 	{
@@ -55,7 +75,7 @@ func TestSimplifyUnnamed(t *testing.T) {
 		destQ := "SELECT * FROM user WHERE id iN (?,?,?) AND age > ? AND name LIKE ? LIMIT ?# ?"
 		destV := []interface{}{1, 2, 3, 10, "J%", 100}
 
-		q, b, err := convertUnnamed(srcQ, srcV1, srcV2, srcV3)
+		q, b, err := Convert(srcQ, srcV1, srcV2, srcV3)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -75,7 +95,7 @@ func TestSimplifyUnnamed(t *testing.T) {
 		destQ := "SELECT * FROM user WHERE id IN (?,?,?)"
 		destV := []interface{}{1, 2, 3, 4}
 
-		q, b, err := convertUnnamed(srcQ, srcV)
+		q, b, err := Convert(srcQ, srcV)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -87,7 +107,7 @@ func TestSimplifyUnnamed(t *testing.T) {
 		}
 	}
 
-	// 'IN ?[N]' inside quotes are ignored
+	// 'IN ?[N]' inside quotes or comments are ignored
 	{
 		srcQ := "SELECT * FROM user WHERE id IN ?[2] AND name = 'id IN ?[2] ' AND age IN ?[2]"
 		srcV := []interface{}{1, 2}
@@ -95,7 +115,7 @@ func TestSimplifyUnnamed(t *testing.T) {
 		destQ := "SELECT * FROM user WHERE id IN (?,?) AND name = 'id IN ?[2] ' AND age IN (?,?)"
 		destV := []interface{}{1, 2}
 
-		q, b, err := convertUnnamed(srcQ, srcV)
+		q, b, err := Convert(srcQ, srcV)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -122,7 +142,7 @@ func TestSimplifyNamed(t *testing.T) {
 		destQ := "SELECT * FROM user WHERE id iN (?,?,?) AND age > ? AND name LIKE ? LIMIT ? -- :dummy"
 		destV := []interface{}{1, 2, 3, 10, "J%", 100}
 
-		q, b, err := convertNamed(srcQ, srcV)
+		q, b, err := Convert(srcQ, srcV)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -134,7 +154,7 @@ func TestSimplifyNamed(t *testing.T) {
 		}
 	}
 
-	// 'IN :placeholder[N]' inside quotes are ignored
+	// 'IN :placeholder[N]' inside quotes or comments are ignored
 	{
 		srcQ := "SELECT * FROM user WHERE id IN :id[2] AND name = 'id IN :id[2] ' AND age IN :age[2]/* :dummy */"
 		srcV := map[string]interface{}{
@@ -145,7 +165,7 @@ func TestSimplifyNamed(t *testing.T) {
 		destQ := "SELECT * FROM user WHERE id IN (?,?) AND name = 'id IN :id[2] ' AND age IN (?,?)/* :dummy */"
 		destV := []interface{}{1, 2, 21, 22}
 
-		q, b, err := convertNamed(srcQ, srcV)
+		q, b, err := Convert(srcQ, srcV)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -206,6 +226,36 @@ func TestSimplifyNamedErr(t *testing.T) {
 
 		if _, _, err := convertNamed(srcQ, srcV); err == nil {
 			t.Fatal("error must be given if a slice does not have N number of elements for :placeholder[N]")
+		}
+	}
+}
+
+func TestConvertSql(t *testing.T) {
+	{
+		src := "SELECT * FROM user WHERE id iN ?[3] -- :dummy"
+		dest := "SELECT * FROM user WHERE id iN (?,?,?) -- :dummy"
+
+		q, err := ConvertSQL(src)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if q != dest {
+			t.Fatalf("got: %s\nwant: %s", q, dest)
+		}
+	}
+
+	{
+		src := "SELECT * FROM user WHERE id iN :id[3] -- :dummy"
+		dest := "SELECT * FROM user WHERE id iN (?,?,?) -- :dummy"
+
+		q, err := ConvertSQL(src)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if q != dest {
+			t.Fatalf("got: %s\nwant: %s", q, dest)
 		}
 	}
 }
