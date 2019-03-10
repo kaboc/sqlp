@@ -1,42 +1,12 @@
 package placeholder
 
 import (
-	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	er "github.com/kaboc/sqlp/errors"
 	ref "github.com/kaboc/sqlp/reflect"
 )
-
-type rep struct {
-	query string
-	orgs  []string
-}
-
-const TEMP_REPLACEMENT = "/**SQLP_REPLACE**/"
-
-func replace(query string) *rep {
-	p1 := `'(\\'|[^'])*?'`
-	p2 := `"(\\"|[^"])*?"`
-	p3 := "`[^`]*?`"
-	p4 := `/\*.*?\*/`
-	p5 := `(#|\s+--).*?([\r\n]|$)`
-	exp := regexp.MustCompile(`(?s)(` + p1 + `|` + p2 + `|` + p3 + `|` + p4 + `|` + p5 + `)`)
-
-	return &rep{
-		query: exp.ReplaceAllString(query, TEMP_REPLACEMENT),
-		orgs:  exp.FindAllString(query, -1),
-	}
-}
-
-func (r *rep) restore() string {
-	for _, v := range r.orgs {
-		r.query = strings.Replace(r.query, TEMP_REPLACEMENT, v, 1)
-	}
-	return r.query
-}
 
 func isNamed(args ...interface{}) bool {
 	return len(args) == 1 && ref.IsMap(ref.ValueOf(args[0]))
@@ -62,20 +32,6 @@ func convertUnnamed(query string, args ...interface{}) (string, []interface{}, e
 	r.unnamedToStd()
 
 	return r.restore(), bind, nil
-}
-
-func (r *rep) unnamedToStd() {
-	exp := regexp.MustCompile(`(?im)(\s+in)\s+\?\[(\d*)\]([\s\),]|` + regexp.QuoteMeta(TEMP_REPLACEMENT) + `|$)`)
-	matches := exp.FindAllStringSubmatch(r.query, -1)
-
-	for _, v := range matches {
-		num, _ := strconv.Atoi(v[2])
-		r.query = exp.ReplaceAllString(r.query, "$1 ("+strings.Repeat("?,", num)[:num*2-1]+")$3")
-	}
-
-	if convertFunc != nil {
-		convertFunc(&r.query)
-	}
 }
 
 func convertNamed(query string, arg map[string]interface{}) (string, []interface{}, error) {
@@ -138,33 +94,6 @@ func convertNamed(query string, arg map[string]interface{}) (string, []interface
 	}
 
 	return r.restore(), bind, nil
-}
-
-func (r *rep) namedToStd() map[string]interface{} {
-	bindModel := make(map[string]interface{})
-
-	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([^\s\[\),]+)\[(\d*)\]([\s\)/,]|` + regexp.QuoteMeta(TEMP_REPLACEMENT) + `|$)`)
-	matches := exp.FindAllStringSubmatch(r.query, -1)
-
-	for _, v := range matches {
-		num, _ := strconv.Atoi(v[3])
-		r.query = exp.ReplaceAllString(r.query, "$1 ("+strings.Repeat("?,", num)[:num*2-1]+")$4")
-		bindModel[v[2]] = make([]interface{}, num)
-	}
-
-	exp = regexp.MustCompile(`(?m):([^\s\[\)/,]+)([\s\)/,]|$)`)
-	matches = exp.FindAllStringSubmatch(r.query, -1)
-
-	for _, v := range matches {
-		r.query = strings.Replace(r.query, ":"+v[1], "?", 1)
-		bindModel[v[1]] = nil
-	}
-
-	if convertFunc != nil {
-		convertFunc(&r.query)
-	}
-
-	return bindModel
 }
 
 func Convert(query string, args ...interface{}) (string, []interface{}, error) {
