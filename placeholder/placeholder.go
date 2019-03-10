@@ -10,23 +10,32 @@ import (
 	ref "github.com/kaboc/sqlp/reflect"
 )
 
+type rep struct {
+	query string
+	orgs  []string
+}
+
 const TEMP_REPLACEMENT = "/**SQLP_REPLACE**/"
 
-func replace(query string) (string, []string) {
+func replace(query string) *rep {
 	p1 := `'(\\'|[^'])*?'`
 	p2 := `"(\\"|[^"])*?"`
 	p3 := "`[^`]*?`"
 	p4 := `/\*.*?\*/`
 	p5 := `(#|\s+--).*?([\r\n]|$)`
 	exp := regexp.MustCompile(`(?s)(` + p1 + `|` + p2 + `|` + p3 + `|` + p4 + `|` + p5 + `)`)
-	return exp.ReplaceAllString(query, TEMP_REPLACEMENT), exp.FindAllString(query, -1)
+
+	return &rep{
+		query: exp.ReplaceAllString(query, TEMP_REPLACEMENT),
+		orgs:  exp.FindAllString(query, -1),
+	}
 }
 
-func restore(query string, orgs []string) string {
-	for _, v := range orgs {
-		query = strings.Replace(query, TEMP_REPLACEMENT, v, 1)
+func (r *rep) restore() string {
+	for _, v := range r.orgs {
+		r.query = strings.Replace(r.query, TEMP_REPLACEMENT, v, 1)
 	}
-	return query
+	return r.query
 }
 
 func isNamed(args ...interface{}) bool {
@@ -49,33 +58,30 @@ func convertUnnamed(query string, args ...interface{}) (string, []interface{}, e
 		}
 	}
 
-	query, orgs := replace(query)
-	query = unnamedToStd(query)
-	query = restore(query, orgs)
+	r := replace(query)
+	r.unnamedToStd()
 
-	return query, bind, nil
+	return r.restore(), bind, nil
 }
 
-func unnamedToStd(query string) string {
+func (r *rep) unnamedToStd() {
 	exp := regexp.MustCompile(`(?im)(\s+in)\s+\?\[(\d*)\]([\s\),]|` + regexp.QuoteMeta(TEMP_REPLACEMENT) + `|$)`)
-	matches := exp.FindAllStringSubmatch(query, -1)
+	matches := exp.FindAllStringSubmatch(r.query, -1)
 
 	for _, v := range matches {
 		num, _ := strconv.Atoi(v[2])
-		query = exp.ReplaceAllString(query, "$1 ("+strings.Repeat("?,", num)[:num*2-1]+")$3")
+		r.query = exp.ReplaceAllString(r.query, "$1 ("+strings.Repeat("?,", num)[:num*2-1]+")$3")
 	}
 
 	if convertFunc != nil {
-		convertFunc(&query)
+		convertFunc(&r.query)
 	}
-
-	return query
 }
 
 func convertNamed(query string, arg map[string]interface{}) (string, []interface{}, error) {
-	query, orgs := replace(query)
+	r := replace(query)
 
-	queryUnnamed, bindModel := namedToStd(query)
+	bindModel := r.namedToStd()
 
 	for name := range arg {
 		_, ok := bindModel[name]
@@ -131,36 +137,34 @@ func convertNamed(query string, arg map[string]interface{}) (string, []interface
 		}
 	}
 
-	queryUnnamed = restore(queryUnnamed, orgs)
-
-	return queryUnnamed, bind, nil
+	return r.restore(), bind, nil
 }
 
-func namedToStd(query string) (string, map[string]interface{}) {
+func (r *rep) namedToStd() map[string]interface{} {
 	bindModel := make(map[string]interface{})
 
 	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([^\s\[\),]+)\[(\d*)\]([\s\)/,]|` + regexp.QuoteMeta(TEMP_REPLACEMENT) + `|$)`)
-	matches := exp.FindAllStringSubmatch(query, -1)
+	matches := exp.FindAllStringSubmatch(r.query, -1)
 
 	for _, v := range matches {
 		num, _ := strconv.Atoi(v[3])
-		query = exp.ReplaceAllString(query, "$1 ("+strings.Repeat("?,", num)[:num*2-1]+")$4")
+		r.query = exp.ReplaceAllString(r.query, "$1 ("+strings.Repeat("?,", num)[:num*2-1]+")$4")
 		bindModel[v[2]] = make([]interface{}, num)
 	}
 
 	exp = regexp.MustCompile(`(?m):([^\s\[\)/,]+)([\s\)/,]|$)`)
-	matches = exp.FindAllStringSubmatch(query, -1)
+	matches = exp.FindAllStringSubmatch(r.query, -1)
 
 	for _, v := range matches {
-		query = strings.Replace(query, ":"+v[1], "?", 1)
+		r.query = strings.Replace(r.query, ":"+v[1], "?", 1)
 		bindModel[v[1]] = nil
 	}
 
 	if convertFunc != nil {
-		convertFunc(&query)
+		convertFunc(&r.query)
 	}
 
-	return query, bindModel
+	return bindModel
 }
 
 func Convert(query string, args ...interface{}) (string, []interface{}, error) {
@@ -174,17 +178,13 @@ func Convert(query string, args ...interface{}) (string, []interface{}, error) {
 }
 
 func ConvertSQL(query string) (string, error) {
-	q, orgs := replace(query)
+	r := replace(query)
 
-	var queryUnnamed string
-
-	if strings.Contains(q, ":") {
-		queryUnnamed, _ = namedToStd(q)
+	if strings.Contains(r.query, ":") {
+		r.namedToStd()
 	} else {
-		queryUnnamed = unnamedToStd(q)
+		r.unnamedToStd()
 	}
 
-	queryUnnamed = restore(queryUnnamed, orgs)
-
-	return queryUnnamed, nil
+	return r.restore(), nil
 }

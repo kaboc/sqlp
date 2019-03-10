@@ -33,12 +33,12 @@ eee' /*
 		"\t\t\t\tORDER BY id--ooo\n" +
 		"\t\t\t\tLIMIT 10/**SQLP_REPLACE**/"
 
-	q, r := replace(src)
-	if q != dest {
-		t.Fatalf("got: %#v\nwant: %#v", q, dest)
+	r := replace(src)
+	if r.query != dest {
+		t.Fatalf("got: %#v\nwant: %#v", r.query, dest)
 	}
 
-	q = restore(q, r)
+	q := r.restore()
 	if q != src {
 		t.Fatalf("got: %#v\nwant: %#v", q, src)
 	}
