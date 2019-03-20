@@ -11,7 +11,7 @@ type rep struct {
 	orgs  []string
 }
 
-const TEMP_REPLACEMENT = "/**SQLP_REPLACE**/"
+const tempReplacement = "/**SQLP_REPLACE**/"
 
 func replace(query string) *rep {
 	p1 := `'(\\'|[^'])*?'`
@@ -22,20 +22,20 @@ func replace(query string) *rep {
 	exp := regexp.MustCompile(`(?s)(` + p1 + `|` + p2 + `|` + p3 + `|` + p4 + `|` + p5 + `)`)
 
 	return &rep{
-		query: exp.ReplaceAllString(query, TEMP_REPLACEMENT),
+		query: exp.ReplaceAllString(query, tempReplacement),
 		orgs:  exp.FindAllString(query, -1),
 	}
 }
 
 func (r *rep) restore() string {
 	for _, v := range r.orgs {
-		r.query = strings.Replace(r.query, TEMP_REPLACEMENT, v, 1)
+		r.query = strings.Replace(r.query, tempReplacement, v, 1)
 	}
 	return r.query
 }
 
 func (r *rep) unnamedToStd() {
-	exp := regexp.MustCompile(`(?im)(\s+in)\s+\?\[(\d*)\]([\s\),]|` + regexp.QuoteMeta(TEMP_REPLACEMENT) + `|$)`)
+	exp := regexp.MustCompile(`(?im)(\s+in)\s+\?\[(\d*)\]([\s\),]|` + regexp.QuoteMeta(tempReplacement) + `|$)`)
 	matches := exp.FindAllStringSubmatch(r.query, -1)
 
 	for _, v := range matches {
@@ -51,7 +51,7 @@ func (r *rep) unnamedToStd() {
 func (r *rep) namedToStd() map[string]interface{} {
 	bindModel := make(map[string]interface{})
 
-	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([^\s\[\),]+)\[(\d*)\]([\s\)/,]|` + regexp.QuoteMeta(TEMP_REPLACEMENT) + `|$)`)
+	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([^\s\[\),]+)\[(\d*)\]([\s\)/,]|` + regexp.QuoteMeta(tempReplacement) + `|$)`)
 	matches := exp.FindAllStringSubmatch(r.query, -1)
 
 	for _, v := range matches {

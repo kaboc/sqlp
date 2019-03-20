@@ -8,30 +8,30 @@ import (
 func TestReplace(t *testing.T) {
 	src := `SELECT * FROM /*tbl1 --aaa
 				*/ ` + "`tbl2`" + ` --bbb
-				WHERE col1 = 'c\'cc'# /* ddd */
-					OR col2 = 'eee
+			WHERE col1 = 'c\'cc'# /* ddd */
+				OR col2 = 'eee
 eee' /*
-					OR col3 = '#fff'*/
-					OR col4 = 'g/*g*/g' # :hhh ii/*ii*/ii
-					OR col5 = 'iii'/*jjj*/#kkk
-					OR col6 = ''
-					OR col7 = :col7 -- :lll
-					OR col8 = :col8# :mmm
-					OR col9 = :col9/* :nnn */
-				ORDER BY id--ooo
-				LIMIT 10#'ppp'`
+				OR col3 = '#fff'*/
+				OR col4 = 'g/*g*/g' # :hhh ii/*ii*/ii
+				OR col5 = 'iii'/*jjj*/#kkk
+				OR col6 = ''
+				OR col7 = :col7 -- :lll
+				OR col8 = :col8# :mmm
+				OR col9 = :col9/* :nnn */
+			ORDER BY id--ooo
+			LIMIT 10#'ppp'`
 
 	dest := "SELECT * FROM /**SQLP_REPLACE**/ /**SQLP_REPLACE**//**SQLP_REPLACE**/" +
-		"\t\t\t\tWHERE col1 = /**SQLP_REPLACE**//**SQLP_REPLACE**/" +
-		"\t\t\t\t\tOR col2 = /**SQLP_REPLACE**/ /**SQLP_REPLACE**/\n" +
-		"\t\t\t\t\tOR col4 = /**SQLP_REPLACE**/ /**SQLP_REPLACE**/" +
-		"\t\t\t\t\tOR col5 = /**SQLP_REPLACE**//**SQLP_REPLACE**//**SQLP_REPLACE**/" +
-		"\t\t\t\t\tOR col6 = /**SQLP_REPLACE**/\n" +
-		"\t\t\t\t\tOR col7 = :col7/**SQLP_REPLACE**/" +
-		"\t\t\t\t\tOR col8 = :col8/**SQLP_REPLACE**/" +
-		"\t\t\t\t\tOR col9 = :col9/**SQLP_REPLACE**/\n" +
-		"\t\t\t\tORDER BY id--ooo\n" +
-		"\t\t\t\tLIMIT 10/**SQLP_REPLACE**/"
+		"\t\t\tWHERE col1 = /**SQLP_REPLACE**//**SQLP_REPLACE**/" +
+		"\t\t\t\tOR col2 = /**SQLP_REPLACE**/ /**SQLP_REPLACE**/\n" +
+		"\t\t\t\tOR col4 = /**SQLP_REPLACE**/ /**SQLP_REPLACE**/" +
+		"\t\t\t\tOR col5 = /**SQLP_REPLACE**//**SQLP_REPLACE**//**SQLP_REPLACE**/" +
+		"\t\t\t\tOR col6 = /**SQLP_REPLACE**/\n" +
+		"\t\t\t\tOR col7 = :col7/**SQLP_REPLACE**/" +
+		"\t\t\t\tOR col8 = :col8/**SQLP_REPLACE**/" +
+		"\t\t\t\tOR col9 = :col9/**SQLP_REPLACE**/\n" +
+		"\t\t\tORDER BY id--ooo\n" +
+		"\t\t\tLIMIT 10/**SQLP_REPLACE**/"
 
 	r := replace(src)
 	if r.query != dest {
