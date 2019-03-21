@@ -131,12 +131,12 @@ func TestSimplifyUnnamed(t *testing.T) {
 func TestSimplifyNamed(t *testing.T) {
 	// Whether IN is all in capital letters does not matter
 	{
-		srcQ := "SELECT * FROM user WHERE id iN :id[3] AND age > :age AND name LIKE :name LIMIT :limit -- :dummy"
+		srcQ := "SELECT * FROM user WHERE id iN :3_Ids[3] AND age > :age AND name LIKE :name LIMIT :limitNum_100 -- :dummy"
 		srcV := map[string]interface{}{
-			"id":    []interface{}{1, 2, 3},
+			"3_Ids":    []interface{}{1, 2, 3},
 			"age":   10,
 			"name":  "J%",
-			"limit": 100,
+			"limitNum_100": 100,
 		}
 
 		destQ := "SELECT * FROM user WHERE id iN (?,?,?) AND age > ? AND name LIKE ? LIMIT ? -- :dummy"
@@ -164,6 +164,28 @@ func TestSimplifyNamed(t *testing.T) {
 
 		destQ := "SELECT * FROM user WHERE id IN (?,?) AND name = 'id IN :id[2] ' AND age IN (?,?)/* :dummy */"
 		destV := []interface{}{1, 2, 21, 22}
+
+		q, b, err := Convert(srcQ, srcV)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if q != destQ {
+			t.Fatalf("got: %s\nwant: %s", q, destQ)
+		} else if !reflect.DeepEqual(b, destV) {
+			t.Fatalf("got: %v\nwant: %v", b, destV)
+		}
+	}
+
+	// MySQL assignment operator (:=) is not recognized as a named placeholder
+	{
+		srcQ := "SELECT id, @cnt:=@cnt+1 FROM user, (SELECT @cnt := 0) AS x LIMIT :limit"
+		srcV := map[string]interface{}{
+			"limit": 10,
+		}
+
+		destQ := "SELECT id, @cnt:=@cnt+1 FROM user, (SELECT @cnt := 0) AS x LIMIT ?"
+		destV := []interface{}{10}
 
 		q, b, err := Convert(srcQ, srcV)
 		if err != nil {
@@ -226,6 +248,26 @@ func TestSimplifyNamedErr(t *testing.T) {
 
 		if _, _, err := convertNamed(srcQ, srcV); err == nil {
 			t.Fatal("error must be given if a slice does not have N number of elements for :placeholder[N]")
+		}
+	}
+
+	{
+		srcQ := "SELECT * FROM user WHERE id = :id-num"
+		srcV := map[string]interface{}{"id-num": 1}
+
+		if _, _, err := convertNamed(srcQ, srcV); err == nil {
+			t.Fatal("error must be given if a placeholder name contains any character other than alphabets, numbers, or underscores")
+		}
+	}
+
+	{
+		srcQ := "SELECT * FROM user WHERE id IN :id#[4]"
+		srcV := map[string]interface{}{
+			"id#": []interface{}{1, 2, 3, 4},
+		}
+
+		if _, _, err := convertNamed(srcQ, srcV); err == nil {
+			t.Fatal("error must be given if a placeholder name contains any character other than alphabets, numbers, or underscores")
 		}
 	}
 }

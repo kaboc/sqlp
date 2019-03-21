@@ -315,6 +315,8 @@ q := `SELECT name, age, recorded_at FROM user
       WHERE name LIKE :like AND age IN :age[2]`
 ```
 
+A placeholder name must start with a colon followed by either of or a combination of alphabets, numbers, or underscores.
+
 `:like` and `:age[2]` are the named placeholders.
 They are internally converted to unnamed ones as below:
 
