@@ -51,7 +51,8 @@ func (r *rep) unnamedToStd() {
 func (r *rep) namedToStd() map[string]interface{} {
 	bindModel := make(map[string]interface{})
 
-	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([^\s\[\),]+)\[(\d*)\]([\s\)/,]|` + regexp.QuoteMeta(tempReplacement) + `|$)`)
+	// Replacement of in :xxxx[xx]
+	exp := regexp.MustCompile(`(?im)(\s+in)\s+:([a-z0-9_]+)\[(\d*)\]([\s\)/,]|` + regexp.QuoteMeta(tempReplacement) + `|$)`)
 	matches := exp.FindAllStringSubmatch(r.query, -1)
 
 	for _, v := range matches {
@@ -60,7 +61,8 @@ func (r *rep) namedToStd() map[string]interface{} {
 		bindModel[v[2]] = make([]interface{}, num)
 	}
 
-	exp = regexp.MustCompile(`(?m):([^\s\[\)/,]+)([\s\)/,]|$)`)
+	// Replacement of :xxxx
+	exp = regexp.MustCompile(`(?m):([a-zA-Z0-9_]+)([\s\)/,]|$)`)
 	matches = exp.FindAllStringSubmatch(r.query, -1)
 
 	for _, v := range matches {
