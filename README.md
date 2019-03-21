@@ -10,6 +10,7 @@ The key features are:
 ### Table of Contents
 
 * [Installation](#installation)
+* [Requirements](#requirements)
 * [Usage](#usage)
     * [Example Table](#example-table)
     * [Getting Started](#getting-started)
@@ -28,6 +29,10 @@ The key features are:
         * [For different types of placeholder](#for-different-types-of-placeholder)
     * [Named Placeholder](#named-placeholder)
 * [License](#license)
+
+## Requirements
+
+* Go 1.10 or newer
 
 ## Installation
 
