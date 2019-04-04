@@ -37,8 +37,8 @@ func Init(sqlDB *sql.DB) *DB {
 	return newDB(sqlDB)
 }
 
-func (db *DB) Close() {
-	db.SqlDB.Close()
+func (db *DB) Close() error {
+	return db.SqlDB.Close()
 }
 
 func (db *DB) sqlExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
