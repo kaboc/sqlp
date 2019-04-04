@@ -1,5 +1,7 @@
 # sqlp
 
+[![Build Status](https://travis-ci.org/kaboc/sqlp.svg?branch=master)](https://travis-ci.org/kaboc/sqlp)
+
 sqlp is a Go package extending database/sql to make it a little easier to use by adding some features that may come in handy for you.
 The key features are:
 
