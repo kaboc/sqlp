@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/kaboc/sqlp.svg?branch=master)](https://travis-ci.org/kaboc/sqlp)
 
-sqlp is a Go package extending database/sql to make it a little easier to use by adding some features that may come in handy for you.
+sqlp is a Go package extending `database/sql` to make it a little easier to use by adding some features that may come in handy for you.
 The key features are:
 
 * Bulk inserting data in structs into a table
@@ -44,7 +44,7 @@ go get github.com/kaboc/sqlp
 
 ## Usage
 
-Basic usage is mostly the same as for database/sql, so only major differences are described in this section.
+Basic usage is mostly the same as that of `database/sql`, so only major differences are described in this section.
 
 ### Example Table
 
@@ -86,7 +86,7 @@ import (
 db, err := sqlp.Open("mysql", "user:pw@tcp(host:3306)/dbname")
 ```
 
-Use `sqlp.Init()` instead if there is a connection already opened by database/sql's `Open()`.
+Use `sqlp.Init()` instead if there is a connection already opened by `database/sql`'s `Open()`.
 
 ```go
 sqlDB, err := sql.Open("mysql", "user:pw@tcp(host:3306)/dbname")
@@ -123,7 +123,7 @@ fmt.Printf("%d rows were affected", cnt) // 3 rows were affected
 Struct fields need to be capitalized so that sqlp can access them.
 
 A tag is necessary only when the field name is not the same as the column name.
-In the above example, `col:"age"` can be omitted since columns are case insensitive in MySQL by default and `Age` and `age` are not distinguished.
+In the above example, `col:"age"` can be omitted since column names are case insensitive in MySQL by default and `Age` and `age` are not distinguished.
 
 Values are processed via [placeholders](#placeholders) internally and escaped to be safe. There is no need to worry about SQL injection.
 
@@ -168,7 +168,7 @@ for rows.Next() {
 
 Columns are mapped to corresponding struct fields.
 
-Here, unlike in the above Insert example, the `RecordedAt` field does not have the `` `col:"recorded_at` `` tag.
+Here, unlike the previous [Insert](#insert) example, the `RecordedAt` field does not have the `` `col:"recorded_at` `` tag.
 This is because `RecordedAt` is regarded as identical to `recorded_at` by case-insensitive comparison after underscores are removed.
 
 #### Into map
@@ -219,8 +219,8 @@ err := db.SelectToStruct(&u, `SELECT name, age, recorded_at FROM user`)
 fmt.Println(u)
 ```
 
-This saves you from making a query and then scanning each row.
-It is convenient, but be careful not to use up huge amounts of memory by fetching too many rows into a slice at a time.
+This saves you the bother of making a query and then scanning each row.
+It is convenient, but be careful not to use up huge amounts of memory by fetching too many rows at a time.
 
 #### Into slice of maps
 
@@ -242,7 +242,7 @@ sqlp provides both named and unnamed placeholders.
 
 ### Unnamed Placeholder
 
-This is quite similar to database/sql's placeholder, with only several differences:
+This is quite similar to `database/sql`'s placeholder, with only several differences:
 
 * Only `?` is used regardless of the type of DBMS or the database driver. `$1` or other types are not available.
 * `WHERE name IN (?, ?)` can be replaced with `WHERE name IN ?[2]`.
@@ -292,7 +292,7 @@ WHERE name LIKE $1 AND age IN ($2,$3)
 ```
 
 This type of placeholder is defined as the constant `placeholder.Dollar`.
-If you specify it by `placeholder.SetType()`, sqlp converts `?` to `$1` internally, so you can use `?` in your query.
+If you specify it by `placeholder.SetType()`, sqlp converts `?` to `$1` internally so you can use `?` in your query.
 
 ```go
 placeholder.SetType(placeholder.Dollar)
@@ -300,7 +300,7 @@ q := "SELECT * FROM user WHERE name LIKE ? AND age IN ?[2]"
 u, err := db.SelectToMap(q, "User%", 22, 31)
 ```
 
-Another way is to define a conversion function on your own.
+Another way is to pass your custom conversion function to `placeholder.SetConvertFunc()`.
 You should be able to make do with this even if definition of your required type is missing in sqlp.
 
 ```go
@@ -314,7 +314,7 @@ placeholder.SetConvertFunc(func(query *string) {
 
 ### Named Placeholder
 
-This is radically different from database/sql's named placeholder.
+This is radically different from `database/sql`'s named placeholder.
 Here is an example similar to the previous one.
 
 ```go
@@ -342,7 +342,7 @@ b := map[string]interface{}{
 u, err := db.SelectToMap(q, b)
 ```
 
-It is the same here as for unnamed placeholder that `placeholer.SetType()` or `placeholder.SetConvertFunc()` is necessary if your DBMS or database driver does not support the `?` type.
+The same applies here as for `placeholder.SetType()` or `placeholder.SetConvertFunc()`.
 
 ## License
 
