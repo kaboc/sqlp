@@ -1,6 +1,7 @@
 package placeholder
 
 import (
+	"regexp"
 	"sort"
 	"strings"
 
@@ -66,26 +67,13 @@ func convertNamed(query string, arg map[string]interface{}) (string, []interface
 		}
 	}
 
-	mapLen := len(arg)
-	orderSort := make(map[int]string, mapLen)
-	indexes := make([]int, mapLen)
-
-	i := 0
-	for name := range arg {
-		index := strings.Index(query, ":"+name)
-		orderSort[index] = name
-		indexes[i] = index
-		i++
-	}
-	sort.Ints(indexes)
-
+	names := sortNameByIndex(query, arg)
 	var bind []interface{}
-	for _, index := range indexes {
-		name := orderSort[index]
 
+	for _, name := range names {
 		v := ref.ValueOf(arg[name])
 		if ref.IsSlice(v) {
-			for i = 0; i < v.Len(); i++ {
+			for i := 0; i < v.Len(); i++ {
 				bind = append(bind, v.Index(i).Interface())
 			}
 		} else {
@@ -94,6 +82,34 @@ func convertNamed(query string, arg map[string]interface{}) (string, []interface
 	}
 
 	return r.restore(), bind, nil
+}
+
+func sortNameByIndex(query string, arg map[string]interface{}) []string {
+	// Add colon to the end of each placeholder name in query string to prevent
+	// strings.Index(query, ":foo") from returning the index of ":foobar".
+	exp := regexp.MustCompile(`(?m):([a-zA-Z0-9_]+)`)
+	if exp.MatchString(query) {
+		query = exp.ReplaceAllString(query, "$0:")
+	}
+
+	mapLen := len(arg)
+	names := make(map[int]string, mapLen)
+	indexes := make([]int, mapLen)
+	i := 0
+	for name := range arg {
+		index := strings.Index(query, ":"+name+":")
+		names[index] = name
+		indexes[i] = index
+		i++
+	}
+	sort.Ints(indexes)
+
+	sorted := make([]string, mapLen)
+	for j, index := range indexes {
+		sorted[j] = names[index]
+	}
+
+	return sorted
 }
 
 func Convert(query string, args ...interface{}) (string, []interface{}, error) {

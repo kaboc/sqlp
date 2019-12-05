@@ -198,6 +198,29 @@ func TestSimplifyNamed(t *testing.T) {
 			t.Fatalf("got: %v\nwant: %v", b, destV)
 		}
 	}
+
+	// Successful even if multiple placeholder names start with the same word
+	{
+		srcQ := "UPDATE user SET age = :age_new WHERE age IN :age[2]"
+		srcV := map[string]interface{}{
+			"age_new":  20,
+			"age": []interface{}{21, 22},
+		}
+
+		destQ := "UPDATE user SET age = ? WHERE age IN (?,?)"
+		destV := []interface{}{20, 21, 22}
+
+		q, b, err := Convert(srcQ, srcV)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if q != destQ {
+			t.Fatalf("got: %s\nwant: %s", q, destQ)
+		} else if !reflect.DeepEqual(b, destV) {
+			t.Fatalf("got: %v\nwant: %v", b, destV)
+		}
+	}
 }
 
 func TestSimplifyNamedErr(t *testing.T) {
