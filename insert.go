@@ -37,11 +37,11 @@ func insertContext(ctx context.Context, sq sqler, tableName string, structSlice 
 		columnNames[i3] = v.Tag
 	}
 
-	sqlstmt := `INSERT INTO ` + tableName + `
+	query := `INSERT INTO ` + tableName + `
 				(` + strings.Join(columnNames, ",") + `)
 				VALUES ` + strings.Join(values, ",")
 
-	res, err := execContext(ctx, sq, sqlstmt, binds...)
+	res, err := execContext(ctx, sq, query, binds...)
 	if err != nil {
 		return result, err
 	}

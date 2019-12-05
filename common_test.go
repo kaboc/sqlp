@@ -1,9 +1,10 @@
 package sqlp
 
 import (
-	ref "github.com/kaboc/sqlp/reflect"
 	"reflect"
 	"testing"
+
+	ref "github.com/kaboc/sqlp/reflect"
 )
 
 type sample struct {
