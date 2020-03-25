@@ -7,10 +7,12 @@ import (
 
 type columnTypes = sql.ColumnType
 
-type NullBool = sql.NullBool
-type NullFloat64 = sql.NullFloat64
-type NullInt64 = sql.NullInt64
 type NullString = sql.NullString
+type NullInt64 = sql.NullInt64
+type NullInt32 = sql.NullInt32
+type NullFloat64 = sql.NullFloat64
+type NullBool = sql.NullBool
+type NullTime = sql.NullTime
 
 type RawBytes = sql.RawBytes
 
