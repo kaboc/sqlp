@@ -77,7 +77,7 @@ Import `sqlp` and other necessary packages including a database driver like `go-
 
 ```go
 import (
-    "github.com/go-sql-driver/mysql"
+    _ "github.com/go-sql-driver/mysql"
     "github.com/kaboc/sqlp"
 )
 ```
