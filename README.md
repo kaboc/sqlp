@@ -101,13 +101,13 @@ You can bulk insert multiple rows easily using a slice of structs containing set
 type tUser struct {
     Name       string
     Age        int
-    RecordedAt mysql.NullTime `col:"recorded_at"`
+    RecordedAt sqlp.NullTime `col:"recorded_at"`
 }
 
-now := mysql.NullTime{Time: time.Now(), Valid: true}
+now := sqlp.NullTime{Time: time.Now(), Valid: true}
 data := []tUser{
     {Name: "User1", Age: 22, RecordedAt: now},
-    {Name: "User2", Age: 27, RecordedAt: mysql.NullTime{}},
+    {Name: "User2", Age: 27, RecordedAt: sqlp.NullTime{}},
     {Name: "User3", Age: 31, RecordedAt: now},
 }
 
@@ -143,7 +143,7 @@ Values are processed via [placeholders](#placeholders) internally and escaped to
 type tUser struct {
     Name       string
     Age        int
-    RecordedAt mysql.NullTime
+    RecordedAt sqlp.NullTime
 }
 
 rows, err := db.Query(`SELECT name, age, recorded_at FROM user`)
@@ -211,7 +211,7 @@ for rows.Next() {
 type tUser struct {
     Name       string
     Age        int
-    RecordedAt mysql.NullTime
+    RecordedAt sqlp.NullTime
 }
 
 var u []tUser
