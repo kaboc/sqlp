@@ -34,7 +34,7 @@ The key features are:
 
 ## Requirements
 
-* Go 1.13 or newer
+* Go 1.15 or newer
 
 ## Installation
 
