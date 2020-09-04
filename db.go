@@ -129,6 +129,10 @@ func (db *DB) PingContext(ctx context.Context) error {
 	return db.SqlDB.PingContext(ctx)
 }
 
+func (db *DB) SetConnMaxIdleTime(d time.Duration) {
+	db.SqlDB.SetConnMaxIdleTime(d)
+}
+
 func (db *DB) SetConnMaxLifetime(d time.Duration) {
 	db.SqlDB.SetConnMaxLifetime(d)
 }

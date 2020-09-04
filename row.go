@@ -81,3 +81,7 @@ func (r *Row) ScanToSlice() ([]string, error) {
 
 	return result, nil
 }
+
+func (r *Row) Err() error {
+	return r.err
+}
